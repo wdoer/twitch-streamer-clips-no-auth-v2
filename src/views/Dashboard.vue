@@ -1,5 +1,16 @@
 <template>
   <main class="main">
+    <v-text-field
+      v-model="tags"
+      label="Теги"
+      size="10"
+      variant="outlined"
+      density="compact"
+      single-line
+      hide-details
+      class="mb-2"
+      @change="saveTagsToLS()"
+    ></v-text-field>
     <div class="category__wrapper">
       <div class="category-chips__box">
         <v-chip
@@ -124,15 +135,7 @@
             autoplay
           ></video>
         </a>
-        <div class="action-buttons">
-          <v-btn
-            icon
-            size="x-small"
-            color="primary"
-            @click="addClipToVideo(clip)"
-          >
-            <v-icon icon="mdi-plus"></v-icon>
-          </v-btn>
+        <div v-if="!clip.noclips" class="action-buttons">
           <v-btn
             icon
             size="x-small"
@@ -146,19 +149,19 @@
           <a 
             :href="clip.videoUrl"
           >
-          <v-btn
-            icon
-            size="x-small"
-            color="primary"
-          >
-            <v-icon 
-              icon="mdi-download"
-            ></v-icon>
-          </v-btn>
+            <v-btn
+              icon
+              size="x-small"
+              color="primary"
+            >
+              <v-icon 
+                icon="mdi-download"
+              ></v-icon>
+            </v-btn>
           </a>
         </div>
         <div
-          v-if="!clip.isWatched"
+          v-if="!clip.isWatched && !clip.noclips"
           class="content"
         >
           <span class="views">{{ clip.views }} ({{ clip.duration }})</span>
@@ -167,104 +170,18 @@
       </div>
     </div>
     <!-- end clips -->
-    <hr v-if="clipsToVideo.length" class="my-3">
-    <draggable 
-      class="clips-to-video__wrapper dragArea list-group w-full" 
-      :list="clipsToVideo" 
-    >
-      <div
-        v-for="clip in clipsToVideo"
-        :key="clip.url"
-        class="clip"
-      >
-        <span 
-          class="title"
-        >
-          {{ clip.name }}
-        </span>
-        <a 
-          :href="clip.url"
-          target="_blank"
-        >
-          <img 
-            :src="clip.thumbnail"
-            :alt="clip.title"
-          />
-        </a>
-        <div class="action-buttons">
-          <v-btn
-            icon
-            size="x-small"
-            color="primary"
-            @click="removeClipFromVideo(clip)"
-          >
-            <v-icon icon="mdi-minus"></v-icon>
-          </v-btn>
-          <a 
-            :href="clip.videoUrl"
-          >
-          <v-btn
-            icon
-            size="x-small"
-            color="primary"
-          >
-            <v-icon 
-              icon="mdi-download"
-            ></v-icon>
-          </v-btn>
-          </a>
-        </div>
-        <div
-          class="content"
-        >
-          <span class="views">{{ clip.views }} ({{ clip.duration }})</span>
-          <span class="date">{{ clip.date }}</span>
-        </div>
-      </div>
-    </draggable>
-    <!-- end clips to video -->
-    <hr v-if="videoAssets.length" class="my-3">
-    <div class="video-assets__wrapper">
-    </div>
-    <!-- end video assets -->
-    <hr 
-      v-if="clipsToVideo.length" 
-      class="my-6"
-    >
-    <v-btn
-      v-if="clipsToVideo.length"
-      size="small"
-      color="primary"
-      class="mr-2"
-      @click="socket.emit('renderVideo', prerenderClips())"
-    >
-      Рендер
-    </v-btn>
-    <v-btn
-      v-if="clipsToVideo.length"
-      size="small"
-      color="primary"
-      @click="socket.emit('downloadVideo', prerenderClips())"
-    >
-      Скачать клипы
-    </v-btn>
   </main>
 </template>
 
 <script>
-import { VueDraggableNext } from 'vue-draggable-next'
 import { defineComponent } from 'vue';
 
 import { io } from 'socket.io-client';
 
 export default defineComponent({
   name: 'dashboard',
-  components: { 
-    draggable: VueDraggableNext
-  },
   data: () => ({
     socket: null,
-    dragging: false,
     category: {
       editMode: false,
       streamersEditMode: false,
@@ -275,21 +192,17 @@ export default defineComponent({
       items: [],
     },
     clips: [],
-    clipsToVideo: [],
-    videoAssets: [],
+    tags: '',
   }),
   created() {
     this.getCategoriesFromLS();
-    this.getClipsVideoFromLS();
+    this.getTagsFromLS();
+
     this.socket = io(process.env.VUE_APP_SOCKET_ENDPOINT)
     this.socket.on('getStreamerClips', (data) => {
       data.forEach(el => {
         el.isWatched = false;
         el.videoUrl = el.thumbnail.replace('-preview-480x272.jpg', '.mp4');
-      })
-      
-      data.sort(function(a, b) {
-        return new Date(a.date).valueOf() - new Date(b.date).valueOf();
       })
 
       this.clips = data;
@@ -309,7 +222,7 @@ export default defineComponent({
       this.clips = [];
       this.socket.emit('getStreamerClips', val.nick)
 
-      // navigator.clipboard.writeText(`#twitchfm #twitchofflane #${val}`);
+      navigator.clipboard.writeText(`${this.tags} #${val.nick}`);
     },
   },
   methods: {
@@ -341,7 +254,6 @@ export default defineComponent({
         this.category.selectedCategory.streamers.push({ nick: streamerNick, isSelected: false })
       }
       this.category.addStreamerNick = ''
-      // this.category.streamersEditMode = false
 
       this.saveCategoriesToLS()
     },
@@ -357,42 +269,18 @@ export default defineComponent({
     getCategoriesFromLS() {
       this.category.items = JSON.parse(localStorage.getItem('categories')) ?? [];
     },
-    addClipToVideo(clip) {
-      if (!this.clipsToVideo.find(el => el.url === clip.url)) {
-        clip.streamer = this.category.selectedStreamer.nick;
-        this.clipsToVideo.push(clip)
-      }
-      
-      this.saveClipsVideoToLS()
-    },
-    removeClipFromVideo(clip) {
-      this.clipsToVideo = this.clipsToVideo.filter(el => el.url !== clip.url)
-
-      this.saveClipsVideoToLS()
-    },
-    saveClipsVideoToLS() {
-      localStorage.setItem('clipsToVideo', JSON.stringify(this.clipsToVideo))
-    },
-    getClipsVideoFromLS() {
-      this.clipsToVideo = JSON.parse(localStorage.getItem('clipsToVideo')) ?? [];
-    },
-    prerenderClips() {
-      return this.clipsToVideo.map(el => ({
-        streamer: el.streamer,
-        url: el.videoUrl
-      }))
-    },
     watchClip(clip) {
       this.clips.forEach(el => {
-        if (el.url === clip.url) return clip.isWatched = !clip.isWatched;
+        if (el.url === clip.url) return el.isWatched = !el.isWatched;
         el.isWatched = false
-      })      
+      })  
     },
-    deleteClipsToVideo() {
-      this.clipsToVideo = [];
-
-      this.saveClipsVideoToLS();
-    }
+    saveTagsToLS() {
+      localStorage.setItem('tags', JSON.stringify(this.tags))
+    },
+    getTagsFromLS() {
+      this.tags = JSON.parse(localStorage.getItem('tags')) ?? [];
+    },
   }
 });
 </script>
@@ -419,7 +307,7 @@ h2
     justify-content flex-start
     flex-wrap wrap
     gap 5px
-.clips__wrapper, .clips-to-video__wrapper, .video-assets__wrapper
+.clips__wrapper, .clips-to-video__wrapper, .video-assets__wrapper, .clips-to-tiktok__wrapper
   display flex
   flex-wrap wrap
   align-items flex-start

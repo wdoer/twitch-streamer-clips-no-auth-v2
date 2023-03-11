@@ -32,8 +32,20 @@ const getStreamerClips = async (streamer) => {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
 
-  await page.goto(`https://twitchtracker.com/${streamer}/clips#${getFormattedDate() - 1}-${getFormattedDate() - 1}`);
-  await page.waitForSelector('.clip-tp');
+  try {
+    await page.goto(`https://twitchtracker.com/${streamer}/clips#${getFormattedDate() - 1}-${getFormattedDate() - 1}`);
+    await page.waitForSelector('.clip-tp', { timeout: 5000 });
+  } catch (err) {
+    const noClips = [
+      {
+        name: 'Клипов нет',
+        thumbnail: 'https://sitechecker.pro/wp-content/uploads/2017/12/404.png',
+        noclips: true,
+      }
+    ];
+    io.emit('getStreamerClips', noClips)
+    return;
+  }
 
   const html = await page.content();
   const $ = cheerio.load(html);
