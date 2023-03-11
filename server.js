@@ -29,7 +29,7 @@ http.listen(3000, () => { })
 
 // get streamer clips
 const getStreamerClips = async (streamer) => {
-  // const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch();
   // const browser = await puppeteer.launch({
   //   executablePath: '/usr/bin/chromium-browser',
   //   args: [
@@ -43,7 +43,7 @@ const getStreamerClips = async (streamer) => {
   //     '--disable-gpu'
   //   ]
   // });
-  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+  // const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
   const page = await browser.newPage();
   try {
     await page.goto(`https://twitchtracker.com/${streamer}/clips#${getFormattedDate() - 1}-${getFormattedDate() - 1}`);
