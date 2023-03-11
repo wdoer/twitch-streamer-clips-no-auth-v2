@@ -30,20 +30,20 @@ http.listen(3000, () => { })
 // get streamer clips
 const getStreamerClips = async (streamer) => {
   console.log(streamer)
-  // const browser = await puppeteer.launch();
-  const browser = await puppeteer.launch({
-    executablePath: '/usr/bin/chromium-browser',
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process', // <- this one doesn't works in Windows
-      '--disable-gpu'
-    ]
-  });
+  const browser = await puppeteer.launch();
+  // const browser = await puppeteer.launch({
+  //   executablePath: '/usr/bin/chromium-browser',
+  //   args: [
+  //     '--no-sandbox',
+  //     '--disable-setuid-sandbox',
+  //     '--disable-dev-shm-usage',
+  //     '--disable-accelerated-2d-canvas',
+  //     '--no-first-run',
+  //     '--no-zygote',
+  //     '--single-process', // <- this one doesn't works in Windows
+  //     '--disable-gpu'
+  //   ]
+  // });
 
   console.log(browser)
 
