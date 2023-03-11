@@ -34,7 +34,7 @@ const getStreamerClips = async (streamer) => {
 
   try {
     await page.goto(`https://twitchtracker.com/${streamer}/clips#${getFormattedDate() - 1}-${getFormattedDate() - 1}`);
-    await page.waitForSelector('.clip-tp', { timeout: 5000 });
+    await page.waitForSelector('.clip-tp', { timeout: 50000 });
   } catch (err) {
     const noClips = [
       {
