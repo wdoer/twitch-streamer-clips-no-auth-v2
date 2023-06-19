@@ -1,4 +1,4 @@
-# scrapper-2.0
+# Continuation of the development of the first part, the new one now has a different interface and the ability to generate ready-made videos.
 
 ## Project setup
 ```
